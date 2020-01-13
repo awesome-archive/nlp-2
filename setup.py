@@ -1,19 +1,15 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import print_function
-
 import io
-
 import re
 from os.path import dirname, join
-
 from setuptools import setup
-from setuptools_scm import get_version
-
-# Determine semantic versioning automatically
-# from git commits
-__version__ = get_version()
+from utils_nlp import VERSION, AUTHOR, TITLE, LICENSE
 
 
 def read(*names, **kwargs):
@@ -23,17 +19,17 @@ def read(*names, **kwargs):
 
 setup(
     name="utils_nlp",
-    version=__version__,
-    license="MIT License",
+    version=VERSION,
+    license=LICENSE,
     description="NLP Utility functions that are used for best practices in building state-of-the-art NLP methods and scenarios. Developed by Microsoft AI CAT",
     long_description="%s\n%s"
     % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub("", read("README.md")),
         re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("CONTRIBUTING.md")),
     ),
-    author="AI CAT",
+    author=AUTHOR,
     author_email="teamsharat@microsoft.com",
-    url="https://github.com/microsoft/nlp",
+    url="https://github.com/microsoft/nlp-recipes",
     packages=["utils_nlp"],
     include_package_data=True,
     zip_safe=True,
@@ -60,14 +56,20 @@ setup(
         "Intended Audience :: Telecommunications Industry",
     ],
     project_urls={
-        "Documentation": "https://github.com/microsoft/nlp/",
-        "Issue Tracker": "https://github.com/microsoft/nlp/issues",
+        "Documentation": "https://github.com/microsoft/nlp-recipes/",
+        "Issue Tracker": "https://github.com/microsoft/nlp-recipes/issues",
     },
-    keywords=["Microsoft NLP", "Natural Language Processing", "Text Processing", "Word Embedding"],
+    keywords=[
+        "Microsoft NLP",
+        "NLP Recipes",
+        "Natural Language Processing",
+        "Text Processing",
+        "Word Embedding",
+    ],
     python_requires=">=3.6",
-    install_requires=["setuptools_scm>=3.2.0"],
+    install_requires=[],
     dependency_links=[],
     extras_require={},
-    use_scm_version={"root": ".", "relative_to": __file__},
-    setup_requires=["setuptools_scm"],
+    use_scm_version=False,
+    setup_requires=[],
 )

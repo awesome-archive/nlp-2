@@ -10,13 +10,16 @@
 # automatically gets discovered by pytest."
 
 import os
+import pandas as pd
 from tempfile import TemporaryDirectory
 
 import pytest
 from tests.notebooks_common import path_notebooks
 
-from utils_nlp.models.bert.common import Language
+from utils_nlp.models.bert.common import Language as BERTLanguage
+from utils_nlp.models.xlnet.common import Language as XLNetLanguage
 from utils_nlp.models.bert.common import Tokenizer as BERTTokenizer
+from utils_nlp.models.xlnet.common import Tokenizer as XLNetTokenizer
 from utils_nlp.azureml import azureml_utils
 from azureml.core.webservice import Webservice
 
@@ -35,14 +38,20 @@ def notebooks():
         ),
         "bert_encoder": os.path.join(folder_notebooks, "sentence_similarity", "bert_encoder.ipynb"),
         "gensen_local": os.path.join(folder_notebooks, "sentence_similarity", "gensen_local.ipynb"),
-        "gensen_azureml": os.path.join(
+        "gensen_aml_deep_dive": os.path.join(
             folder_notebooks, "sentence_similarity", "gensen_aml_deep_dive.ipynb"
         ),
-        "similarity_automl_local": os.path.join(
+        "automl_local_deployment_aci": os.path.join(
             folder_notebooks, "sentence_similarity", "automl_local_deployment_aci.ipynb"
         ),
         "automl_with_pipelines_deployment_aks": os.path.join(
             folder_notebooks, "sentence_similarity", "automl_with_pipelines_deployment_aks.ipynb"
+        ),
+        "question_answering_squad_transformers": os.path.join(
+            folder_notebooks, "question_answering", "question_answering_squad_transformers.ipynb"
+        ),
+        "bert_senteval": os.path.join(
+            folder_notebooks, "sentence_similarity", "bert_senteval.ipynb"
         ),
         "bert_qa_trainer": os.path.join(
             folder_notebooks, "question_answering", "pretrained-BERT-SQuAD-deep-dive-aml.ipynb"
@@ -55,21 +64,23 @@ def notebooks():
             "question_answering",
             "question_answering_system_bidaf_quickstart.ipynb",
         ),
-        "entailment_multinli_bert": os.path.join(
-            folder_notebooks, "entailment", "entailment_multinli_bert.ipynb"
+        "entailment_multinli_transformers": os.path.join(
+            folder_notebooks, "entailment", "entailment_multinli_transformers.ipynb"
         ),
-        "entailment_bert_azureml": os.path.join(
+        "entailment_xnli_bert_azureml": os.path.join(
             folder_notebooks, "entailment", "entailment_xnli_bert_azureml.ipynb"
         ),
         "tc_bert_azureml": os.path.join(
             folder_notebooks, "text_classification", "tc_bert_azureml.ipynb"
         ),
-        "bert_senteval": os.path.join(
-            folder_notebooks, "sentence_similarity", "bert_senteval.ipynb"
+        "tc_mnli_transformers": os.path.join(
+            folder_notebooks, "text_classification", "tc_mnli_transformers.ipynb"
         ),
-        "tc_mnli_bert": os.path.join(folder_notebooks, "text_classification", "tc_mnli_bert.ipynb"),
-        "ner_wikigold_bert": os.path.join(
-            folder_notebooks, "named_entity_recognition", "ner_wikigold_bert.ipynb"
+        "tc_multi_languages_transformers": os.path.join(
+            folder_notebooks, "text_classification", "tc_multi_languages_transformers.ipynb"
+        ),
+        "ner_wikigold_transformer": os.path.join(
+            folder_notebooks, "named_entity_recognition", "ner_wikigold_transformer.ipynb"
         ),
         "deep_and_unified_understanding": os.path.join(
             folder_notebooks, "model_explainability", "interpret_dnn_layers.ipynb"
@@ -80,6 +91,15 @@ def notebooks():
 
 @pytest.fixture
 def tmp(tmp_path_factory):
+    td = TemporaryDirectory(dir=tmp_path_factory.getbasetemp())
+    try:
+        yield td.name
+    finally:
+        td.cleanup()
+
+
+@pytest.fixture(scope="module")
+def tmp_module(tmp_path_factory):
     td = TemporaryDirectory(dir=tmp_path_factory.getbasetemp())
     try:
         yield td.name
@@ -155,6 +175,55 @@ def ner_test_data():
     }
 
 
+@pytest.fixture(scope="module")
+def qa_test_df():
+    test_df = pd.DataFrame(
+        {
+            "doc_text": [
+                "The color of the sky is blue.",
+                "Architecturally, the school has a Catholic character. Atop the Main Building's "
+                "gold dome is a golden statue of the Virgin Mary. Immediately in front of the Main "
+                "Building and facing it, is a copper statue of Christ with arms upraised with the "
+                'legend "Venite Ad Me Omnes". Next to the Main Building is the Basilica of the '
+                "Sacred Heart. Immediately behind the basilica is the Grotto, a Marian place of "
+                "prayer and reflection. It is a replica of the grotto at Lourdes, France where "
+                "the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At "
+                "the end of the main drive (and in a direct line that connects through 3 statues "
+                "and the Gold Dome), is a simple, modern stone statue of Mary.",
+            ],
+            "question_text": [
+                "What's the color of the sky?",
+                "To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France?",
+            ],
+            "answer_start": [24, 515],
+            "answer_text": ["blue", "Saint Bernadette Soubirous"],
+            "answer_start_list": [[24], [515]],
+            "answer_text_list": [["blue"], ["Saint Bernadette Soubirous"]],
+            "answer_start_multi": [[24, 25], [515, 516]],
+            "answer_text_multi": [
+                ["blue", "grey"],
+                ["Saint Bernadette Soubirous", "Bernadette Soubirous"],
+            ],
+            "qa_id": ["1", "2"],
+            "is_impossible": [False, False],
+        }
+    )
+
+    return {
+        "test_df": test_df,
+        "doc_text_col": "doc_text",
+        "question_text_col": "question_text",
+        "answer_start_col": "answer_start",
+        "answer_text_col": "answer_text",
+        "answer_start_list_col": "answer_start_list",
+        "answer_text_list_col": "answer_text_list",
+        "answer_start_multi_col": "answer_start_multi",
+        "answer_text_multi_col": "answer_text_multi",
+        "qa_id_col": "qa_id",
+        "is_impossible_col": "is_impossible",
+    }
+
+
 def pytest_addoption(parser):
     parser.addoption("--subscription_id", help="Azure Subscription Id to create resources in")
     parser.addoption("--resource_group", help="Name of the resource group")
@@ -190,7 +259,12 @@ def cluster_name(request):
 
 @pytest.fixture()
 def bert_english_tokenizer():
-    return BERTTokenizer(language=Language.ENGLISHCASED, to_lower=False)
+    return BERTTokenizer(language=BERTLanguage.ENGLISHCASED, to_lower=False)
+
+
+@pytest.fixture()
+def xlnet_english_tokenizer():
+    return XLNetTokenizer(language=XLNetLanguage.ENGLISHCASED)
 
 
 @pytest.fixture(scope="module")
@@ -200,7 +274,6 @@ def teardown_service(subscription_id, resource_group, workspace_name, workspace_
 
     # connect to workspace
     ws = azureml_utils.get_or_create_workspace(
-        config_path="tests/ci",
         subscription_id=subscription_id,
         resource_group=resource_group,
         workspace_name=workspace_name,
